@@ -6,6 +6,7 @@ import time
 
 WIN_WIDTH = 500
 WIN_HEIGHT = 800
+MAX_FPS = 30
 
 BIRD_IMGS = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird1.png"))),
              pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird2.png"))),
@@ -95,6 +96,85 @@ class Bird:
     def get_mask(self):
         return pygame.mask.from_surface(self.img)
 
+
+# Pipe Class
+class Pipe:
+    GAP = 200
+    VEL = 5
+
+    def __init__(self, x):
+        self.x = x
+        self.height = 0
+        
+        self.top = 0
+        self.bottom = 0
+        self.PIPE_TOP = pygame.transform.flip(PIPE_IMG, False, True)
+        self.PIP_BOTTOM = PIPE_IMG
+
+        self.passed = False # to check if bird passed by it
+
+        # calling random height function
+        self.set_height()
+
+    #Generating the height of the pipe using RANDOM
+    def set_height(self):
+        self.height = random.randrange(50 , 450)
+        #y cordinate for top pipe
+        self.top =  self.height - self.PIPE_TOP.get_height()
+        #y coordinate for bottom pipe
+        self.bottom = self.height + self.GAP
+        
+    def move(self):
+        self.x -= self.VEL
+    
+    def draw(self, win):
+        win.blit(self.PIPE_TOP,(self.x, self.top))
+        win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
+
+    # Collision detection using Masks
+    def collide(self, bird):
+        bird_mask = bird.get_mask()
+        top_mask = pygame.mask.from_surface(self.PIPE_TOP)
+        bottom_mask = pygame.mask.from_surface(self.PIP_BOTTOM)
+
+        top_offset = (self.x - bird.x, self.top - round(bird.y))
+        bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+
+        #Point of collisions
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+        t_point = bird_mask.overlap(top_mask, top_offset)
+
+        if t_point or b_point:
+            return True
+        
+        return False
+
+class Base:
+    VEL = 5
+    WIDTH = BASE_IMG.get_width()
+    IMG = BASE_IMG
+
+    def __init__(self, y):
+        self.y = y
+        self.x1 = 0
+        self.x2 = self.WIDTH
+
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
+        
+        # Cycle the base images continously without running out 
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH
+
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+    
+
+    def draw(self, win):
+        win.blit(self.IMG, (self.x1, self.y))
+        win.blit(self.IMG, (self.x2, self.y))
+
 def draw_window(win, bird):
     win.blit(BG_IMG, (0, 0))
     bird.draw(win)
@@ -103,16 +183,20 @@ def draw_window(win, bird):
 def main():
     bird = Bird(200, 200)
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    
+    clock = pygame.time.Clock()
+    
     run = True
     while run:
 
+        clock.tick(MAX_FPS)
         #Checks for any event in our pygame window
         for event in pygame.event.get():
 
             # Checks if event is QUIT then quits the window(red cross)
             if event.type == pygame.QUIT:
                 run = False
-
+        #bird.move()
         draw_window(win, bird)
     pygame.quit()
     quit()
